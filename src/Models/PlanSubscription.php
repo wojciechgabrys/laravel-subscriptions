@@ -4,19 +4,19 @@ declare(strict_types=1);
 
 namespace Rinvex\Subscriptions\Models;
 
-use DB;
 use Carbon\Carbon;
-use LogicException;
-use Spatie\Sluggable\SlugOptions;
-use Rinvex\Support\Traits\HasSlug;
-use Illuminate\Database\Eloquent\Model;
+use DB;
 use Illuminate\Database\Eloquent\Builder;
-use Rinvex\Subscriptions\Services\Period;
-use Rinvex\Support\Traits\HasTranslations;
-use Rinvex\Support\Traits\ValidatingTrait;
-use Rinvex\Subscriptions\Traits\BelongsToPlan;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\MorphTo;
+use LogicException;
+use Rinvex\Subscriptions\Services\Period;
+use Rinvex\Subscriptions\Traits\BelongsToPlan;
+use Rinvex\Support\Traits\HasSlug;
+use Rinvex\Support\Traits\HasTranslations;
+use Rinvex\Support\Traits\ValidatingTrait;
+use Spatie\Sluggable\SlugOptions;
 
 /**
  * Rinvex\Subscriptions\Models\PlanSubscription.
@@ -149,8 +149,8 @@ class PlanSubscription extends Model
         $this->setRules([
             'name' => 'required|string|strip_tags|max:150',
             'description' => 'nullable|string|max:32768',
-            'slug' => 'required|alpha_dash|max:150|unique:'.config('rinvex.subscriptions.tables.plan_subscriptions').',slug',
-            'plan_id' => 'required|integer|exists:'.config('rinvex.subscriptions.tables.plans').',id',
+            'slug' => 'required|alpha_dash|max:150|unique:' . config('rinvex.subscriptions.tables.plan_subscriptions') . ',slug',
+            'plan_id' => 'required|integer|exists:' . config('rinvex.subscriptions.tables.plans') . ',id',
             'subscriber_id' => 'required|integer',
             'subscriber_type' => 'required|string|strip_tags|max:150',
             'trial_ends_at' => 'nullable|date',
@@ -169,7 +169,7 @@ class PlanSubscription extends Model
         parent::boot();
 
         static::validating(function (self $model) {
-            if (! $model->starts_at || ! $model->ends_at) {
+            if (!$model->starts_at || !$model->ends_at) {
                 $model->setNewPeriod();
             }
         });
@@ -215,7 +215,7 @@ class PlanSubscription extends Model
      */
     public function active(): bool
     {
-        return ! $this->ended() || $this->onTrial();
+        return !$this->ended() || $this->onTrial();
     }
 
     /**
@@ -225,7 +225,7 @@ class PlanSubscription extends Model
      */
     public function inactive(): bool
     {
-        return ! $this->active();
+        return !$this->active();
     }
 
     /**
@@ -324,6 +324,34 @@ class PlanSubscription extends Model
 
             // Renew period
             $subscription->setNewPeriod();
+            $subscription->canceled_at = null;
+            $subscription->save();
+        });
+
+        return $this;
+    }
+
+    /**
+     * Renew subscription period.
+     *
+     * @throws \LogicException
+     *
+     * @return $this
+     */
+    public function extend()
+    {
+        if ($this->ended() && $this->canceled()) {
+            throw new LogicException('Unable to extend canceled ended subscription.');
+        }
+
+        $subscription = $this;
+
+        DB::transaction(function () use ($subscription) {
+            // Clear usage data
+            $subscription->usage()->delete();
+
+            // Renew period
+            $subscription->setNewPeriod('', '', $subscription->ends_at);
             $subscription->canceled_at = null;
             $subscription->save();
         });
@@ -525,7 +553,7 @@ class PlanSubscription extends Model
     {
         $usage = $this->usage()->byFeatureSlug($featureSlug)->first();
 
-        return ! $usage->expired() ? $usage->used : 0;
+        return !$usage->expired() ? $usage->used : 0;
     }
 
     /**
