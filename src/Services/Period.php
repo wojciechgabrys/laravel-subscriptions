@@ -62,13 +62,12 @@ class Period
         }
 
         $start = clone $this->start;
-        $end = clone $this->end;
         $method = 'add' . ucfirst($this->interval) . 's';
 
         if ($continueCurrentSubscription == false) {
             $this->end = $start->{$method}($this->period);
         } else {
-            $this->end = $end->{$method}($this->period);
+            $this->end = $this->end->{$method}($this->period);
         }
     }
 
