@@ -351,7 +351,7 @@ class PlanSubscription extends Model
             $subscription->usage()->delete();
 
             // Renew period
-            $subscription->setNewPeriod('', '', $subscription->ends_at);
+            $subscription->setNewPeriod('', '', $subscription->ends_at, true);
             $subscription->canceled_at = null;
             $subscription->save();
         });

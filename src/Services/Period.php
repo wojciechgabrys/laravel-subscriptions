@@ -45,13 +45,13 @@ class Period
      *
      * @return void
      */
-    public function __construct($interval = 'month', $count = 1, $start = '')
+    public function __construct($interval = 'month', $count = 1, $start = '', $continueCurrentSubscription = false)
     {
         $this->interval = $interval;
 
         if (empty($start)) {
             $this->start = Carbon::now();
-        } elseif (! $start instanceof Carbon) {
+        } elseif (!$start instanceof Carbon) {
             $this->start = new Carbon($start);
         } else {
             $this->start = $start;
@@ -62,8 +62,14 @@ class Period
         }
 
         $start = clone $this->start;
-        $method = 'add'.ucfirst($this->interval).'s';
-        $this->end = $start->{$method}($this->period);
+        $end = clone $this->end;
+        $method = 'add' . ucfirst($this->interval) . 's';
+
+        if ($continueCurrentSubscription == false) {
+            $this->end = $start->{$method}($this->period);
+        } else {
+            $this->end = $end->{$method}($this->period);
+        }
     }
 
     /**
