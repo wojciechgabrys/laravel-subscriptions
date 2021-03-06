@@ -16,6 +16,13 @@ class Period
     protected $start;
 
     /**
+     * Starting date of the period.
+     *
+     * @var string
+     */
+    protected $originalStartDate;
+
+    /**
      * Ending date of the period.
      *
      * @var string
@@ -45,7 +52,7 @@ class Period
      *
      * @return void
      */
-    public function __construct($interval = 'month', $count = 1, $start = '', $continueCurrentSubscription = false)
+    public function __construct($interval = 'month', $count = 1, $start = '', $originalStartDate = '')
     {
         $this->interval = $interval;
 
@@ -64,10 +71,19 @@ class Period
         $start = clone $this->start;
         $method = 'add' . ucfirst($this->interval) . 's';
 
-        if ($continueCurrentSubscription == false) {
+        if ($originalStartDate == '') {
             $this->end = $start->{$method}($this->period);
         } else {
-            $this->end = $this->end->{$method}($this->period);
+            if (!$originalStartDate instanceof Carbon) {
+                $this->originalStartDate = new Carbon($originalStartDate);
+            } else {
+                $this->originalStartDate = $originalStartDate;
+            }
+            $originalStartDate = clone $this->originalStartDate;
+            $this->start = $originalStartDate;
+            $this->end = $start->{$method}($this->period);
+            // dd('renewing...')
+            // $this->end = $this->end->{$method}($this->period);
         }
     }
 

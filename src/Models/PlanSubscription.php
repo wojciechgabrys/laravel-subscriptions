@@ -351,7 +351,7 @@ class PlanSubscription extends Model
             $subscription->usage()->delete();
 
             // Renew period
-            $subscription->setNewPeriod('', '', $subscription->ends_at, true);
+            $subscription->setNewPeriod('', '', $subscription->ends_at, $subscription->starts_at);
             $subscription->canceled_at = null;
             $subscription->save();
         });
@@ -437,7 +437,7 @@ class PlanSubscription extends Model
      *
      * @return $this
      */
-    protected function setNewPeriod($invoice_interval = '', $invoice_period = '', $start = '')
+    protected function setNewPeriod($invoice_interval = '', $invoice_period = '', $start = '', $originalStartDate = '')
     {
         if (empty($invoice_interval)) {
             $invoice_interval = $this->plan->invoice_interval;
@@ -447,7 +447,7 @@ class PlanSubscription extends Model
             $invoice_period = $this->plan->invoice_period;
         }
 
-        $period = new Period($invoice_interval, $invoice_period, $start);
+        $period = new Period($invoice_interval, $invoice_period, $start, $originalStartDate);
 
         $this->starts_at = $period->getStartDate();
         $this->ends_at = $period->getEndDate();
